@@ -25,4 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'zoom_downloader';
+$string['modulename'] = 'Zoom Downloader';
+$string['modulenameplural'] = 'Zoom Downloaders';
+$string['pluginname'] = 'Zoom Downloader';
+$string['eventviewmodule'] = 'Módulo Zoom Downloader visualizado';
+$string['zoomdownloader:addinstance'] = 'Añadir nuevo Zoom Downloader';
+$string['zoomdownloader:view'] = 'Ver Zoom Downloader';
