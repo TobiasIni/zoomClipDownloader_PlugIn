@@ -29,3 +29,7 @@ $plugin->release = '0.1.0';
 $plugin->version = 2024110600;
 $plugin->requires = 2022112800;
 $plugin->maturity = MATURITY_ALPHA;
+$plugin->dependencies = array(
+    'mod_zoom' => ANY_VERSION,  // Requiere el plugin de Zoom
+    'local_aws' => ANY_VERSION  // Si planeas usar S3 para almacenamiento
+);

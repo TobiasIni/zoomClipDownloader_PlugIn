@@ -1,23 +1,52 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/zoomdownloader/db" VERSION="20241106" COMMENT="XMLDB file for Moodle mod_zoomdownloader"
+<XMLDB PATH="mod/zoomdownloader/db" VERSION="20240106" COMMENT="XMLDB file for Moodle mod/zoomdownloader"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
-  <TABLES>
-    <TABLE NAME="zoomdownloader" COMMENT="Stores the zoomdownloader activity module instances.">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the course this activity is part of."/>
-        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The name of the activity module instance"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Timestamp of when the instance was added to the course."/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Timestamp of when the instance was last modified."/>
-        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Activity description."/>
-        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The format of the intro field."/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="fk_course" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
-      </KEYS>
-    </TABLE>
-  </TABLES>
+    <TABLES>
+        <TABLE NAME="zoomdownloader" COMMENT="Tabla principal del módulo zoomdownloader">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="fk_course" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
+            </KEYS>
+        </TABLE>
+
+        <TABLE NAME="zoomdownloader_recordings" COMMENT="Almacena información de las grabaciones de Zoom">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la instancia de zoomdownloader"/>
+                <FIELD NAME="meeting_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la reunión de Zoom"/>
+                <FIELD NAME="recording_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la grabación de Zoom"/>
+                <FIELD NAME="recording_type" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Tipo de grabación (shared_screen, active_speaker, etc)"/>
+                <FIELD NAME="start_time" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Timestamp de inicio de la grabación"/>
+                <FIELD NAME="end_time" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Timestamp de fin de la grabación"/>
+                <FIELD NAME="file_path" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Ruta del archivo descargado"/>
+                <FIELD NAME="file_size" TYPE="bigint" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Tamaño del archivo en bytes"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Estado: pending, downloading, completed, error"/>
+                <FIELD NAME="attempts" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Número de intentos de descarga"/>
+                <FIELD NAME="last_attempt" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp del último intento"/>
+                <FIELD NAME="error_message" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Mensaje de error si falla"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="fk_instanceid" TYPE="foreign" FIELDS="instanceid" REFTABLE="zoomdownloader" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_meeting_recording" UNIQUE="true" FIELDS="meeting_id, recording_id" COMMENT="Índice único para evitar duplicados"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status" COMMENT="Índice para búsquedas por estado"/>
+                <INDEX NAME="idx_start_time" UNIQUE="false" FIELDS="start_time" COMMENT="Índice para ordenar por fecha"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
 </XMLDB>
