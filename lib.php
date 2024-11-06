@@ -22,6 +22,8 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Return if the plugin supports $feature.
  *
@@ -94,4 +96,13 @@ function zoomdownloader_delete_instance($id) {
     $DB->delete_records('zoomdownloader', array('id' => $id));
 
     return true;
+}
+
+/**
+ * Event handler for course module viewed.
+ *
+ * @param \core\event\course_module_viewed $event The event object.
+ */
+function mod_zoomdownloader_course_module_viewed(\core\event\course_module_viewed $event) {
+    // Aquí puedes añadir lógica adicional cuando se visualiza el módulo del curso.
 }
