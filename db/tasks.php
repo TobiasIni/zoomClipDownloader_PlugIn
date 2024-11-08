@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-// defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die();
 
 $tasks = array(
      array(
          'classname' => 'mod_zoomdownloader\task\zoom_downloader_task',
          'blocking' => 0,
-         'minute' => '*',
-         'hour' => '*',
+         'minute' => '0',
+         'hour' => '0',
          'day' => '*',
+         'month' => '*',
          'dayofweek' => '*',
-         'month' => '*'
+         'disabled' => 0
      )
  );
