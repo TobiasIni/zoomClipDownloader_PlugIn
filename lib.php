@@ -104,7 +104,7 @@ function zoomdownloader_delete_instance($id) {
  *
  * @return void
  */
-function ZoomClipDownloader_register_tasks() {
+/*function ZoomClipDownloader_register_tasks() {
     // Código para registrar tareas, por ejemplo, tareas cron programadas
     // Puedes usar las funciones de Moodle para programar tareas recurrentes
     // Ejemplo: registrar una tarea cron
@@ -113,7 +113,7 @@ function ZoomClipDownloader_register_tasks() {
     // $task->set_name('Nombre de la tarea');
     // $task->set_schedule('* * * * *'); // Cron expression
     // \core\task\manager::configure_scheduled_task($task);
-}
+}*/
 
 /**
  * Obtiene los enlaces de Zoom del módulo de Zoom en un curso específico.
@@ -228,7 +228,7 @@ function ZoomClipDownloader_download_zoom_recordings($zoom_links, $access_token)
     }
 }
 
-require_once 'vendor/autoload.php'; // Asegúrate de que la ruta sea correcta
+//require_once 'vendor/autoload.php'; // Asegúrate de que la ruta sea correcta
 
 /**
  * Sube las grabaciones almacenadas en Moodle a Google Drive.

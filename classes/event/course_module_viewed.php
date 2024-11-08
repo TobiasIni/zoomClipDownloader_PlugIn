@@ -25,6 +25,15 @@ namespace mod_zoomdownloader\event;
 
 defined('MOODLE_INTERNAL') || die();
 
-class course_module_viewed extends \core\event\course_module_viewed {
-    // Aquí puedes añadir propiedades o métodos personalizados si es necesario.
-}
+class course_module_viewed extends base {
+   protected function init(){
+    $this->data['objecttable'] = 'zoomdownloader';
+    $this->data['crud'] = 'r'; // Read operation
+    $this->data['edulevel'] = self::LEVEL_OTHER;
+   }
+
+    protected function get_custom_validation_error() {
+        return '';
+    }
+   }
+
