@@ -24,13 +24,13 @@
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la instancia de zoomdownloader"/>
-                <FIELD NAME="meeting_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la reunión de Zoom"/>
-                <FIELD NAME="recording_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la grabación de Zoom"/>
+                <FIELD NAME="meeting_id" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la reunión de Zoom"/>
+                <FIELD NAME="recording_id" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="ID de la grabación de Zoom"/>
                 <FIELD NAME="recording_type" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Tipo de grabación (shared_screen, active_speaker, etc)"/>
                 <FIELD NAME="start_time" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Timestamp de inicio de la grabación"/>
                 <FIELD NAME="end_time" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Timestamp de fin de la grabación"/>
                 <FIELD NAME="file_path" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Ruta del archivo descargado"/>
-                <FIELD NAME="file_size" TYPE="bigint" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Tamaño del archivo en bytes"/>
+                <FIELD NAME="file_size" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Tamaño del archivo en bytes"/>
                 <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Estado: pending, downloading, completed, error"/>
                 <FIELD NAME="attempts" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Número de intentos de descarga"/>
                 <FIELD NAME="last_attempt" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp del último intento"/>

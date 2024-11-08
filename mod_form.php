@@ -117,34 +117,31 @@ class mod_zoomdownloader_mod_form extends moodleform_mod {
 
         // Add standard buttons.
         $this->add_action_buttons();
-
-          // Agregar elementos adicionales para la configuración de Google Drive si el usuario tiene el rol
-      $context = context_course::instance($this->current->course);
-      $hasrole = user_has_role_assignment($USER->id, $DB->get_field('role', 'id', array('shortname' => 'zoomdownloader_drive_role')), $context->id);
-    }
-    if ($hasrole) {
-        // Adding file manager for credentials.
-        $options = array(
-            'accepted_types' => array('.json'),
-            'maxfiles' => 1, // Limitar a un solo archivo
-            'subdirs' => 0
-        );
-        $mform->addElement('filemanager', 'credentials', get_string('credentials', 'mod_zoomdownloader'), null, $options);
-        $mform->addHelpButton('credentials', 'credentials_help', 'mod_zoomdownloader');
-
-        // Adding text field for folder_id.
-        $mform->addElement('text', 'folder_id', get_string('folder_id', 'mod_zoomdownloader'));
-        $mform->setType('folder_id', PARAM_TEXT);
-        $mform->addHelpButton('folder_id', 'folder_id_help', 'mod_zoomdownloader');
-
-        // Adding checkbox field for debug.
-        $mform->addElement('advcheckbox', 'debug', get_string('debug', 'mod_zoomdownloader'), get_string('debug_desc', 'mod_zoomdownloader'));
-        $mform->setDefault('debug', 0);
-        $mform->addHelpButton('debug', 'debug_help', 'mod_zoomdownloader');
-    }
-
-    $mform->addElement('header', 'others', get_string('others', 'mod_zoomdownloader'));
-
+        $context = context_course::instance($this->current->course);
+        $hasrole = user_has_role_assignment($USER->id, $DB->get_field('role', 'id', array('shortname' => 'zoomdownloader_drive_role')), $context->id);
+        if ($hasrole) {
+            // Adding file manager for credentials.
+            $options = array(
+                'accepted_types' => array('.json'),
+                'maxfiles' => 1, // Limitar a un solo archivo
+                'subdirs' => 0
+            );
+            $mform->addElement('filemanager', 'credentials', get_string('credentials', 'mod_zoomdownloader'), null, $options);
+            $mform->addHelpButton('credentials', 'credentials_help', 'mod_zoomdownloader');
+    
+            // Adding text field for folder_id.
+            $mform->addElement('text', 'folder_id', get_string('folder_id', 'mod_zoomdownloader'));
+            $mform->setType('folder_id', PARAM_TEXT);
+            $mform->addHelpButton('folder_id', 'folder_id_help', 'mod_zoomdownloader');
+    
+            // Adding checkbox field for debug.
+            $mform->addElement('advcheckbox', 'debug', get_string('debug', 'mod_zoomdownloader'), get_string('debug_desc', 'mod_zoomdownloader'));
+            $mform->setDefault('debug', 0);
+            $mform->addHelpButton('debug', 'debug_help', 'mod_zoomdownloader');
+        }
+    
+        $mform->addElement('header', 'others', get_string('others', 'mod_zoomdownloader'));
+    
     // Add standard grading elements.
     $this->standard_grading_coursemodule_elements();
 
@@ -153,6 +150,6 @@ class mod_zoomdownloader_mod_form extends moodleform_mod {
 
     // Add standard buttons.
     $this->add_action_buttons();
-
+    }
     
 }
