@@ -10,11 +10,12 @@ class zoom_downloader_task extends \core\task\scheduled_task {
 
     public function execute() {
         global $DB, $CFG;
-        
-        // Configuraciones
+
+        // Configuración de rutas
         $credentials_path = $CFG->dataroot.'/zoomdownloader_credentials.json';
         $config_path = $CFG->dataroot . '/zoomdownloader_configurations.json';
 
+        // Verificación de archivo de configuración
         if (file_exists($config_path)) {
             $config_data = json_decode(file_get_contents($config_path));
         } else {
@@ -25,12 +26,14 @@ class zoom_downloader_task extends \core\task\scheduled_task {
         $root_folder_id = $config_data->folder_id;
         $debug = $config_data->debug;
 
+        // Función de depuración
         $trace = function($message) use ($debug) {
             if ($debug) {
                 mtrace($message);
             }
         };
 
+        // Funciones de impresión
         $imprimir_inicio = function () use ($trace) {
             $trace("----------------------------------------------------------------------------------------------------------");
             $trace("Iniciando la descarga de grabaciones de Zoom...");
@@ -43,7 +46,7 @@ class zoom_downloader_task extends \core\task\scheduled_task {
 
         $imprimir_inicio();
 
-        // Obtener credenciales
+        // Leer credenciales de archivo
         $leer_credenciales = function($credentials_path) use ($trace) {
             $trace("Leyendo credenciales...");
             $credentials = json_decode(file_get_contents($credentials_path), true);
@@ -55,7 +58,7 @@ class zoom_downloader_task extends \core\task\scheduled_task {
             return $credentials;
         };
 
-        // Configurar autenticación
+        // Configuración de autenticación
         $authManager = new \AuthManager(
             get_config('mod_zoomdownloader', 'zoom'),
             get_config('mod_zoomdownloader', 'google'),
@@ -74,7 +77,7 @@ class zoom_downloader_task extends \core\task\scheduled_task {
 
         // Obtener instancias activas
         $instances = $DB->get_records('zoomdownloader', ['enabled' => 1]);
-        
+
         foreach ($instances as $instance) {
             try {
                 $course = $DB->get_record('course', ['id' => $instance->course]);
@@ -87,49 +90,57 @@ class zoom_downloader_task extends \core\task\scheduled_task {
                     continue;
                 }
 
-                // Descargar grabaciones
-                $grabaciones = $this->descargar_grabaciones($zoom_links, $zoomToken);
-                if (!$grabaciones) {
-                    $trace("Error al descargar grabaciones para el curso " . $course->fullname);
-                    continue;
+                // Obtener grabaciones de Zoom
+                $recordings = $this->getAllZoomRecordings($zoom_links, $zoomToken);
+
+                if ($recordings) {
+                    foreach ($recordings as $recording) {
+                        $trace("Procesando grabación: " . $recording['id']);
+                        
+                        // Aquí puedes agregar la lógica para descargar el archivo de Zoom y subirlo a Google Drive.
+                    }
+                } else {
+                    $trace("No se encontraron grabaciones para el curso " . $course->fullname);
                 }
 
-                // Crear estructura de carpetas en Drive
-                $folder_ids = $this->crear_estructura_carpetas($googleToken, $root_folder_id, $course);
-                if (!$folder_ids) {
-                    $trace("Error al crear estructura de carpetas para el curso " . $course->fullname);
-                    continue;
-                }
-
-                // Subir grabaciones a Drive
-                $this->subir_a_drive($googleToken, $grabaciones, $folder_ids['final_folder_id'], $course);
-                
-                $trace("Procesamiento completado para el curso " . $course->fullname);
             } catch (\Exception $e) {
-                $trace("Error en el curso {$course->fullname}: " . $e->getMessage());
+                mtrace("Error procesando el curso: " . $e->getMessage());
             }
         }
 
         $imprimir_fin();
     }
 
-    private function obtener_enlaces_zoom($course_id) {
-        // Implementar lógica para obtener enlaces de Zoom
-        return ZoomClipDownloader_get_zoom_meeting_links($course_id);
-    }
+    // Función para obtener todas las grabaciones
+    private function getAllZoomRecordings($userId, $accessToken) {
+        $url = "https://api.zoom.us/v2/users/$userId/recordings";
 
-    private function descargar_grabaciones($zoom_links, $zoomToken) {
-        // Implementar lógica para descargar grabaciones
-        return ZoomClipDownloader_download_zoom_recordings($zoom_links, $zoomToken);
-    }
+        // Inicializar cURL
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Authorization: Bearer $accessToken",
+            "Content-Type: application/json"
+        ));
 
-    private function crear_estructura_carpetas($token, $root_folder_id, $course) {
-        // Implementar lógica para crear estructura de carpetas en Drive
-        // Similar a la función del exportanotas pero adaptada para Zoom
-    }
+        // Ejecutar cURL
+        $response = curl_exec($ch);
 
-    private function subir_a_drive($token, $grabaciones, $folder_id, $course) {
-        // Implementar lógica para subir archivos a Drive
-        return ZoomClipDownloader_upload_to_google_drive($token, $grabaciones, $folder_id);
+        // Manejar errores de cURL
+        if (curl_errno($ch)) {
+            echo 'Error de cURL: ' . curl_error($ch);
+            return null;
+        }
+
+        // Cerrar cURL
+        curl_close($ch);
+
+        // Decodificar la respuesta JSON
+        $recordingsData = json_decode($response, true);
+
+        return $recordingsData['meetings'] ?? [];
     }
 }
+
+?>
