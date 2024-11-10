@@ -31,3 +31,19 @@ $string['pluginname'] = 'Zoom Downloader';
 $string['eventviewmodule'] = 'Módulo Zoom Downloader visualizado';
 $string['zoomdownloader:addinstance'] = 'Añadir nuevo Zoom Downloader';
 $string['zoomdownloader:view'] = 'Ver Zoom Downloader';
+
+$string['role_zoomdownloader_name'] = 'Zoom Downloader Role';
+$string['role_zoomdownloader_description'] = 'Role for managing Zoom Downloader permissions.';
+
+// mod/zoomdownloader/lang/en/zoomdownloader.php
+// General settings
+$string['generalsettings'] = 'General settings';
+
+// Zoom API key
+$string['zoomapikey'] = 'Zoom API Key';
+$string['zoomapikey_desc'] = 'Enter your Zoom API Key here.';
+
+// Support email
+$string['supportemail'] = 'Support email';
+$string['supportemail_desc'] = 'Email address for support inquiries.';
+
