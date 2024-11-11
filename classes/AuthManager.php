@@ -1,4 +1,9 @@
 <?php
+require 'vendor/autoload.php';
+
+use Google\Client;
+use Google\Service\Drive;
+
 class AuthManager {
     private $zoomClientId;
     private $zoomClientSecret;
@@ -6,34 +11,30 @@ class AuthManager {
     private $googleClientId;
     private $googleClientSecret;
     private $googleRedirectUri;
-
-    private $db; // Asume que tienes una conexión a la base de datos
+    private $db; // Conexión a la base de datos
 
     public function __construct($zoomConfig, $googleConfig, $dbConnection) {
         $this->zoomClientId = $zoomConfig['client_id'];
         $this->zoomClientSecret = $zoomConfig['client_secret'];
-        $this->zoomRedirectUri = $zoomConfig['url_base'] . '?wstoken=' . $zoomConfig['token'] . '&wsfunction=core_course_get_courses&moodlewsrestformat=json';
-
+        $this->zoomRedirectUri = $zoomConfig['redirect_uri'];
 
         $this->googleClientId = $googleConfig['client_id'];
         $this->googleClientSecret = $googleConfig['client_secret'];
         $this->googleRedirectUri = $googleConfig['redirect_uri'];
 
-        $this->db = $dbConnection; // Conexión a la base de datos
+        $this->db = $dbConnection;
     }
 
-    // Método para obtener el token de acceso de Zoom
+    // Obtiene el token de acceso de Zoom
     public function getZoomAccessToken() {
-        // Verifica si el token de acceso está almacenado y aún es válido
         $accessToken = $this->getStoredAccessToken('zoom');
         if ($this->isTokenExpired($accessToken)) {
-            // Si el token ha caducado, usa el refresh token para obtener uno nuevo
             $accessToken = $this->refreshZoomToken();
         }
         return $accessToken;
     }
 
-    // Método para refrescar el token de Zoom
+    // Refresca el token de Zoom
     private function refreshZoomToken() {
         $refreshToken = $this->getStoredRefreshToken('zoom');
         $url = "https://zoom.us/oauth/token?grant_type=refresh_token&refresh_token=$refreshToken";
@@ -57,18 +58,30 @@ class AuthManager {
         }
     }
 
-    // Método para obtener el token de acceso de Google Drive
-    public function getGoogleAccessToken() {
-        // Verifica si el token de acceso está almacenado y aún es válido
-        $accessToken = $this->getStoredAccessToken('google');
-        if ($this->isTokenExpired($accessToken)) {
-            // Si el token ha caducado, usa el refresh token para obtener uno nuevo
-            $accessToken = $this->refreshGoogleToken();
+    // Autentica y obtiene el cliente de Google Drive
+    public function authenticateGoogle() {
+        $client = new Client();
+        $client->setAuthConfig('path/to/your_client_secret.json');
+        $client->addScope(Drive::DRIVE_FILE);
+        $client->setRedirectUri($this->googleRedirectUri);
+
+        if (!isset($_SESSION['access_token'])) {
+            if (!isset($_GET['code'])) {
+                $authUrl = $client->createAuthUrl();
+                header('Location: ' . filter_var($authUrl, FILTER_SANITIZE_URL));
+                exit;
+            } else {
+                $client->fetchAccessTokenWithAuthCode($_GET['code']);
+                $_SESSION['access_token'] = $client->getAccessToken();
+            }
+        } else {
+            $client->setAccessToken($_SESSION['access_token']);
         }
-        return $accessToken;
+
+        return new Drive($client);
     }
 
-    // Método para refrescar el token de Google
+    // Refresca el token de Google
     private function refreshGoogleToken() {
         $refreshToken = $this->getStoredRefreshToken('google');
         $url = "https://oauth2.googleapis.com/token";
