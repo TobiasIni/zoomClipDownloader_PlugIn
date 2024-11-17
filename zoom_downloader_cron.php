@@ -3,15 +3,32 @@
 require_once(__DIR__ . '/../../../config.php'); // Cargar configuración de Moodle.
 require_once($CFG->dirroot . '/local/zoom/lib.php'); // Si tienes funciones específicas para Zoom.
 require_once($CFG->dirroot . '/path/to/vendor/autoload.php'); // Autoloader de Composer.
+require_once($CFG->dirroot . '/path/to/AuthManager.php'); // Clase para manejar la autenticación.
 
-// Función para subir a Google Drive.
-function upload_to_google_drive($filePath, $mimeType, $folderId = null) {
-    $client = new Google_Client();
-    $client->setAuthConfig($CFG->dirroot . '/path/to/credentials.json');
-    $client->addScope(Google_Service_Drive::DRIVE);
+// Conexión a la base de datos
+try {
+    $dbConnection = new PDO('mysql:host=localhost;dbname=nombre_bd', 'usuario', 'contraseña');
+    $dbConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die('Error al conectar con la base de datos: ' . $e->getMessage());
+}
 
-    $service = new Google_Service_Drive($client);
+// Crear una instancia de AuthManager
+$authManager = new AuthManager([], [], $dbConnection);
 
+// Obtener configuraciones desde AuthManager
+$zoomConfig = $authManager->getZoomConfig();
+$googleConfig = $authManager->getGoogleConfig();
+
+// Obtener token de Zoom
+$zoomAccessToken = $authManager->getZoomAccessToken();
+
+// Cliente autenticado de Google Drive
+$googleClient = $authManager->getGoogleClient();
+$driveService = new Google_Service_Drive($googleClient);
+
+// Función para subir a Google Drive
+function upload_to_google_drive($filePath, $mimeType, $folderId = null, $driveService) {
     $file = new Google_Service_Drive_DriveFile();
     $file->setName(basename($filePath));
 
@@ -20,7 +37,7 @@ function upload_to_google_drive($filePath, $mimeType, $folderId = null) {
     }
 
     $content = file_get_contents($filePath);
-    $uploadedFile = $service->files->create($file, [
+    $uploadedFile = $driveService->files->create($file, [
         'data' => $content,
         'mimeType' => $mimeType,
         'uploadType' => 'multipart',
@@ -29,16 +46,14 @@ function upload_to_google_drive($filePath, $mimeType, $folderId = null) {
     return $uploadedFile->id;
 }
 
-// Descarga de video desde Zoom.
-function download_video_from_zoom($zoomMeetingId, $destinationPath) {
-    // Aquí debes usar la API de Zoom para obtener el enlace de descarga del video.
+// Descarga de video desde Zoom
+function download_video_from_zoom($zoomMeetingId, $destinationPath, $zoomAccessToken) {
     $zoomApiUrl = "https://api.zoom.us/v2/meetings/$zoomMeetingId/recordings";
-    $token = 'YOUR_ZOOM_JWT_TOKEN'; // Reemplazar con tu token.
 
     $ch = curl_init($zoomApiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer $token",
+        "Authorization: Bearer $zoomAccessToken",
     ]);
     $response = curl_exec($ch);
     curl_close($ch);
@@ -52,8 +67,8 @@ function download_video_from_zoom($zoomMeetingId, $destinationPath) {
     return false;
 }
 
-// Proceso principal.
-function process_zoom_to_drive($zoomMeetingId, $folderId) {
+// Proceso principal
+function process_zoom_to_drive($zoomMeetingId, $folderId, $authManager, $driveService) {
     global $CFG;
 
     $tempDir = $CFG->tempdir . '/zoom_videos';
@@ -63,29 +78,30 @@ function process_zoom_to_drive($zoomMeetingId, $folderId) {
 
     $videoPath = $tempDir . "/$zoomMeetingId.mp4";
 
-    // Paso 1: Descargar video desde Zoom.
-    if (download_video_from_zoom($zoomMeetingId, $videoPath)) {
+    // Paso 1: Descargar video desde Zoom
+    $zoomAccessToken = $authManager->getZoomAccessToken();
+    if (download_video_from_zoom($zoomMeetingId, $videoPath, $zoomAccessToken)) {
         mtrace("Video descargado: $videoPath");
 
-        // Paso 2: Subir video a Google Drive.
+        // Paso 2: Subir video a Google Drive
         $mimeType = 'video/mp4';
         try {
-            $fileId = upload_to_google_drive($videoPath, $mimeType, $folderId);
+            $fileId = upload_to_google_drive($videoPath, $mimeType, $folderId, $driveService);
             mtrace("Video subido a Google Drive. ID: $fileId");
         } catch (Exception $e) {
             mtrace("Error subiendo a Google Drive: " . $e->getMessage());
         }
 
-        // Paso 3: Limpiar archivo temporal.
+        // Paso 3: Limpiar archivo temporal
         unlink($videoPath);
     } else {
         mtrace("Error descargando el video desde Zoom.");
     }
 }
 
-// Invocar el proceso.
-$zoomMeetingId = 'YOUR_ZOOM_MEETING_ID'; // Cambia esto con el ID real de la reunión.
-$googleDriveFolderId = 'YOUR_GOOGLE_DRIVE_FOLDER_ID'; // ID de la carpeta en Google Drive.
-process_zoom_to_drive($zoomMeetingId, $googleDriveFolderId);
+// Invocar el proceso
+$zoomMeetingId = 'YOUR_ZOOM_MEETING_ID'; // Cambia esto con el ID real de la reunión
+$googleDriveFolderId = 'YOUR_GOOGLE_DRIVE_FOLDER_ID'; // ID de la carpeta en Google Drive
+process_zoom_to_drive($zoomMeetingId, $googleDriveFolderId, $authManager, $driveService);
 
 mtrace("Proceso finalizado.");

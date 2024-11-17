@@ -7,37 +7,37 @@ use Google\Service\Drive;
 class AuthManager {
     private $zoomClientId;
     private $zoomClientSecret;
-    private $zoomRedirectUri;
     private $googleClientId;
     private $googleClientSecret;
     private $googleRedirectUri;
-    private $db; // Conexión a la base de datos
+    private $db;
 
     public function __construct($zoomConfig, $googleConfig, $dbConnection) {
-        $this->zoomClientId = $zoomConfig['client_id'];
-        $this->zoomClientSecret = $zoomConfig['client_secret'];
-        $this->zoomRedirectUri = $zoomConfig['redirect_uri'];
-
-        $this->googleClientId = $googleConfig['client_id'];
-        $this->googleClientSecret = $googleConfig['client_secret'];
-        $this->googleRedirectUri = $googleConfig['redirect_uri'];
+        $this->zoomClientId = $zoomConfig['rtxK9CMvStqkRNpMb5onZg'];
+        $this->zoomClientSecret = $zoomConfig['WA3842JmPz6pLK6B9alNBJI429jcV6Ni'];
+        
+        $this->googleClientId = $googleConfig['777311179093-j0pbpl7vq687c85t71rf09hs59n9505l.apps.googleusercontent.com'];
+        $this->googleClientSecret = $googleConfig['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'];
+        $this->googleRedirectUri = $googleConfig['http://localhost/?redirect=0'];
 
         $this->db = $dbConnection;
+        session_start();
     }
 
     // Obtiene el token de acceso de Zoom
     public function getZoomAccessToken() {
         $accessToken = $this->getStoredAccessToken('zoom');
+        
         if ($this->isTokenExpired($accessToken)) {
-            $accessToken = $this->refreshZoomToken();
+            $accessToken = $this->fetchNewZoomAccessToken();
         }
+
         return $accessToken;
     }
 
-    // Refresca el token de Zoom
-    private function refreshZoomToken() {
-        $refreshToken = $this->getStoredRefreshToken('zoom');
-        $url = "https://zoom.us/oauth/token?grant_type=refresh_token&refresh_token=$refreshToken";
+    // Obtiene un nuevo access token de Zoom usando Server-to-Server OAuth
+    private function fetchNewZoomAccessToken() {
+        $url = "https://zoom.us/oauth/token?grant_type=client_credentials";
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -45,16 +45,17 @@ class AuthManager {
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Basic " . base64_encode("{$this->zoomClientId}:{$this->zoomClientSecret}")
         ]);
+
         $response = curl_exec($ch);
         curl_close($ch);
 
         $data = json_decode($response, true);
+
         if (isset($data['access_token'])) {
             $this->storeAccessToken('zoom', $data['access_token'], $data['expires_in']);
-            $this->storeRefreshToken('zoom', $data['refresh_token']);
             return $data['access_token'];
         } else {
-            throw new Exception("Error al refrescar el token de Zoom");
+            throw new Exception("Error al obtener el token de acceso de Zoom");
         }
     }
 
@@ -64,50 +65,22 @@ class AuthManager {
         $client->setAuthConfig('path/to/your_client_secret.json');
         $client->addScope(Drive::DRIVE_FILE);
         $client->setRedirectUri($this->googleRedirectUri);
-
+    
         if (!isset($_SESSION['access_token'])) {
             if (!isset($_GET['code'])) {
                 $authUrl = $client->createAuthUrl();
                 header('Location: ' . filter_var($authUrl, FILTER_SANITIZE_URL));
                 exit;
             } else {
-                $client->fetchAccessTokenWithAuthCode($_GET['code']);
-                $_SESSION['access_token'] = $client->getAccessToken();
+                $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
+                $_SESSION['access_token'] = $token['access_token'];
+                $this->storeAccessToken('google', $token['access_token'], $token['expires_in']);
             }
         } else {
             $client->setAccessToken($_SESSION['access_token']);
         }
-
+    
         return new Drive($client);
-    }
-
-    // Refresca el token de Google
-    private function refreshGoogleToken() {
-        $refreshToken = $this->getStoredRefreshToken('google');
-        $url = "https://oauth2.googleapis.com/token";
-
-        $postFields = http_build_query([
-            'client_id' => $this->googleClientId,
-            'client_secret' => $this->googleClientSecret,
-            'refresh_token' => $refreshToken,
-            'grant_type' => 'refresh_token'
-        ]);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
-        $response = curl_exec($ch);
-        curl_close($ch);
-
-        $data = json_decode($response, true);
-        if (isset($data['access_token'])) {
-            $this->storeAccessToken('google', $data['access_token'], $data['expires_in']);
-            return $data['access_token'];
-        } else {
-            throw new Exception("Error al refrescar el token de Google");
-        }
     }
 
     // Métodos auxiliares para manejar tokens
@@ -118,27 +91,12 @@ class AuthManager {
         return $result ? $result['access_token'] : null;
     }
 
-    private function getStoredRefreshToken($service) {
-        $stmt = $this->db->prepare("SELECT refresh_token FROM tokens WHERE service = :service");
-        $stmt->execute(['service' => $service]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ? $result['refresh_token'] : null;
-    }
-
     private function storeAccessToken($service, $accessToken, $expiresIn) {
         $expiresAt = date('Y-m-d H:i:s', time() + $expiresIn);
         $stmt = $this->db->prepare("UPDATE tokens SET access_token = :access_token, expires_at = :expires_at WHERE service = :service");
         $stmt->execute([
             'access_token' => $accessToken,
             'expires_at' => $expiresAt,
-            'service' => $service
-        ]);
-    }
-
-    private function storeRefreshToken($service, $refreshToken) {
-        $stmt = $this->db->prepare("UPDATE tokens SET refresh_token = :refresh_token WHERE service = :service");
-        $stmt->execute([
-            'refresh_token' => $refreshToken,
             'service' => $service
         ]);
     }
@@ -153,4 +111,19 @@ class AuthManager {
         }
         return true; // Si no se encuentra el token, se asume que ha caducado
     }
+    public function getZoomConfig() {
+        return [
+            'clientId' => $this->zoomClientId,
+            'clientSecret' => $this->zoomClientSecret
+        ];
+    }
+    
+    public function getGoogleConfig() {
+        return [
+            'clientId' => $this->googleClientId,
+            'clientSecret' => $this->googleClientSecret,
+            'redirectUri' => $this->googleRedirectUri
+        ];
+    }
+    
 }
